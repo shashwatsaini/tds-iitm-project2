@@ -20,8 +20,13 @@ def get_generic_agent_node(llm, REACT_PROMPT, tools) -> Runnable:
           \n-------------------------------------------------\n""")
         
         current_question = state.get('current_question')
-        result = agent_executor.invoke({"input": state["input"] + f'The current question I must answer, and ignore all others: {current_question}'})
+        result = agent_executor.invoke({
+            "input": state["input"] + f'The current question I must answer, and ignore all others: {current_question}',
+            "output_dir": state["output_dir"],
+        })
+        
         return {
+            **state,
             "input": state["input"],
             "agent_decision": "generic_agent",
             "response": result["output"]

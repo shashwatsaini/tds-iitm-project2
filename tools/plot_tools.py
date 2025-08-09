@@ -20,6 +20,7 @@ def plot_data(input_str: str) -> str:
         x_col = parts["x"]
         y_col = parts["y"]
         csv_data = parts["data"]
+        output_dir = parts['output_dir']
 
         df = pd.read_csv(StringIO(csv_data))
 
@@ -30,11 +31,10 @@ def plot_data(input_str: str) -> str:
         plt.ylabel(y_col)
         plt.title(f'{y_col} vs {x_col}')
         plt.grid(True)
-        plt.savefig(filename)
+        plt.savefig(output_dir)
         plt.close()
 
-        return f"Line plot saved as '{filename}' in {os.getcwd()}"
-
+        return f"Line plot saved as '{filename}' in {output_dir}"
     except Exception as e:
         return f"[PlotTool Error] {str(e)}"
 
@@ -44,7 +44,7 @@ plot_tool = Tool(
     description=(
         "Use this to create a line plot from CSV data. "
         "Input should be in the format:\n"
-        "\"x=column1; y=column2; data=CSV string\"\n"
+        "\"x=column1; y=column2; data=CSV string; output_dir= string;\"\n"
         "It saves the output as 'plot.png' in the current directory."
     )
 )
@@ -62,6 +62,7 @@ def scatterplot_data(input_str: str) -> str:
         x_col = parts["x"]
         y_col = parts["y"]
         csv_data = parts["data"]
+        output_dir = parts['output_dir']
 
         df = pd.read_csv(StringIO(csv_data))
 
@@ -75,7 +76,7 @@ def scatterplot_data(input_str: str) -> str:
         plt.savefig(filename)
         plt.close()
 
-        return f"Scatter plot saved as '{filename}' in {os.getcwd()}"
+        return f"Scatter plot saved as '{filename}' in {output_dir}"
 
     except Exception as e:
         return f"[ScatterPlotTool Error] {str(e)}"
@@ -86,7 +87,7 @@ scatterplot_tool = Tool(
     description=(
         "Use this to create a scatter plot from CSV data. "
         "Input should be in the format:\n"
-        "\"x=column1; y=column2; data=CSV string\"\n"
+        "\"x=column1; y=column2; data=CSV string; output_dir=string;\"\n"
         "It saves the output as 'scatterplot.png' in the current directory."
     )
 )
@@ -104,6 +105,7 @@ def scatterplot_regression_data(input_str: str) -> str:
         x_col = parts["x"]
         y_col = parts["y"]
         csv_data = parts["data"]
+        output_dir = parts['output_dir']
 
         df = pd.read_csv(StringIO(csv_data))
 
@@ -134,7 +136,7 @@ def scatterplot_regression_data(input_str: str) -> str:
         plt.close()
 
         result = (
-            f"Scatter plot with regression line saved as '{filename}' in {os.getcwd()}\n\n"
+            f"Scatter plot with regression line saved as '{filename}' in {output_dir}\n\n"
             f"--- Regression Summary ---\n"
             f"Slope: {slope:.4f}\n"
             f"Intercept: {intercept:.4f}\n"
@@ -154,7 +156,7 @@ scatterplot_regression_tool = Tool(
         "Use this to create a scatter plot from CSV data and plot a regression line. "
         "It also returns regression coefficients, R² score, and mean squared error.\n"
         "Input should be in the format:\n"
-        "\"x=column1; y=column2; data=CSV string\"\n"
+        "\"x=column1; y=column2; data=CSV string; output_dir=string;\"\n"
         "The plot is saved as 'scatterplotregression.png' in the current directory."
     )
 )

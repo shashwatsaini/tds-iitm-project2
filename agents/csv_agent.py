@@ -17,6 +17,7 @@ def get_csv_agent_node(llm, file_path):
         result = agent.invoke(full_input)
 
         return {
+            **state,
             "input": state["input"],
             "agent_decision": "csv_agent",
             "response": result
