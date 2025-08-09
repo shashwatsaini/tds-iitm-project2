@@ -7,6 +7,11 @@ def get_csv_agent_node(llm, file_path):
     agent = create_csv_agent(llm, file_path, verbose=True, allow_dangerous_code=True)
 
     def call_csv_agent(state: AgentState) -> AgentState:
+        print(f"""
+          \n-------------------------------------------------
+          \n[Agent Log] CSV Agent Invoked
+          \n-------------------------------------------------\n""")
+        
         full_input = f"{state['input']}\nIntermediate output from the previous agent: {state.get('response', '')}"
         
         result = agent.invoke(full_input)
