@@ -6,7 +6,6 @@ from langgraph.graph import StateGraph, END
 from langchain_core.prompts import PromptTemplate
 
 from agents.AgentState import AgentState
-from agents.csv_agent import get_csv_agent_node
 from agents.generic_agent import get_generic_agent_node
 from agents.question_splitter_agent import get_question_splitter_node
 
@@ -15,15 +14,12 @@ from tools.duckdb_query_tool import duckdb_tool
 from tools.plot_tools import plot_tool, scatterplot_tool, scatterplot_regression_tool
 from tools.code_executor import code_executor_tool
 
+from agents.FallbackLLM import FallbackLLM
+
 load_dotenv()
 
-file_path = 'X_train.csv'
-
 # Base LLM
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",
-    google_api_key=os.environ.get('GOOGLE_API_KEY')
-)
+llm = FallbackLLM()
 
 tools = [
     web_scraper_tool,
@@ -85,7 +81,6 @@ REACT_PROMPT = PromptTemplate.from_template("""
 """)
 
 generic_agent_node = get_generic_agent_node(llm, REACT_PROMPT, tools)
-csv_agent_node = get_csv_agent_node(llm, file_path)
 splitter_node = get_question_splitter_node(llm)
 
 def per_question_router(state: AgentState) -> AgentState:
@@ -107,8 +102,6 @@ def accumulator(state: AgentState) -> AgentState:
 
 def route_agent(state: AgentState) -> AgentState:
     input_text = state["input"].lower()
-    """if "csv" in input_text:
-        return {"next": "csv_agent"}"""
     return {"next": "generic_agent"}
 
 def router(state: AgentState) -> str:
@@ -133,7 +126,6 @@ def create_workflow():
     workflow.add_node("question_splitter", splitter_node)
     workflow.add_node("per_question_router", per_question_router)
     workflow.add_node("generic_agent", generic_agent_node)
-    workflow.add_node("csv_agent", csv_agent_node)
     workflow.add_node("router", router)
     workflow.add_node("retry_generic_agent", retry_generic_agent)
     workflow.add_node("accumulator", accumulator)
@@ -156,7 +148,6 @@ def create_workflow():
         "router",
         lambda state: state["next"],
         {
-            "csv_agent": "csv_agent",
             "generic_agent": "generic_agent"
         }
     )
@@ -169,7 +160,6 @@ def create_workflow():
         }
     )
     workflow.add_edge("retry_generic_agent", "generic_agent")
-    workflow.add_edge("csv_agent", "accumulator")
     workflow.add_edge("accumulator", "per_question_router")
 
     graph = workflow.compile()

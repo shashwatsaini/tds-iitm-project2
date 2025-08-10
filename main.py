@@ -76,7 +76,7 @@ def run_graph():
         answers_list = [clean_answer(ans) for ans in answers_list]        
 
         return jsonify({
-            "answers": answers_list
+            answers_list
         })
 
     except Exception as e:
