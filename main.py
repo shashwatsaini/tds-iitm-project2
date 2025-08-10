@@ -45,14 +45,18 @@ def run_graph():
             image_path = os.path.join(input_dir, "image.png")
             request.files['image.png'].save(image_path)
 
-        csv_path = None
+        csv_dir = None
+        csv_text = None
         if 'data.csv' in request.files:
-            csv_path = os.path.join(input_dir, "data.csv")
-            request.files['data.csv'].save(csv_path)
+            csv_dir = os.path.join(input_dir, "data.csv")
+            csv_text = f'If a CSV file is given, it is saved in {csv_dir}. I must only use \'CodeExecutorTool\' to interact with CSV files if a CSV file is given'
+            request.files['data.csv'].save(csv_dir)
 
         result = graph.invoke({
             "input": questions_text,
             "request_id": request_id,
+            "csv_dir": csv_dir,
+            "csv_text": csv_text,
             "output_dir": output_dir
         })
 
@@ -69,8 +73,6 @@ def run_graph():
                     answer = f"data:image/{ext};base64,{encoded_image}"
             answers_list.append(answer)
 
-        # Clean answers
-        answers_list = ["[1]", "[\"Titanic\"]","0.9168940027663529"]
         answers_list = [clean_answer(ans) for ans in answers_list]        
 
         return jsonify({

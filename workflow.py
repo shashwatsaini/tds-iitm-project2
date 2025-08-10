@@ -21,13 +21,13 @@ file_path = 'X_train.csv'
 
 # Base LLM
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-pro",
     google_api_key=os.environ.get('GOOGLE_API_KEY')
 )
 
 tools = [
     web_scraper_tool,
-    duckdb_tool,
+    # duckdb_tool,
     # plot_tool,
     # scatterplot_tool,
     # catterplot_regression_tool,
@@ -45,22 +45,41 @@ REACT_PROMPT = PromptTemplate.from_template("""
     Question: the input question you must answer
     Thought: you should always think about what to do
                                             
-    Action: the action to take, should be one of [{tool_names}]. I must direct all tools to save their outputs to the folder {output_dir}/<file name>""" +
-    f""" If a URL is provided, I must always use '{tool_names[0]}'. If a DuckDB or parquet is provided online, 
-    I must always use '{tool_names[1]}' to connect and execute queries. For plotting, I must always use '{tool_names[2]}', which can execute any plotting code I send it.""" + """
+    Action: the action to take, should be one of [{tool_names}]. I must direct all tools to save their outputs to the folder {output_dir}/<file name>
+    {csv_text}""" + f"""
+
+    If a URL is provided, I must always use '{tool_names[0]}' to load/process the data.
+
+    I must use '{tool_names[1]}' for:
+      - All CSV or Parquet file analysis (local or online)
+      - All DuckDB queries or SQL on data
+      - Any code-based data processing or transformation """ + """
+      - All plotting with matplotlib or seaborn code to save plots to {output_dir}/<file name>.
+    
+    However, I should not encode the plots, and instead send them to {output_dir}/<file name>.
 
     Action Input: the input to the action
     Observation: the result of the action
     ... (this Thought/Action/Action Input/Observation can repeat N times)
     Thought: I now know the final answer
-    Final Answer: only return the answer to the question you have been asked. If the output is a file, I must return the file path only. If the output is a number, I must return the number only.
+    Final Answer: only return the answer to the question you have been asked. 
+    If the output is a file, I must return the file path only. 
+    If the output is a number, I must return the number only.
+    I must not encode any images or files in base64 — encoding will be done by a later system.
 
     Example reply:
-        [1, "Titanic", 0.485782, "data:image/png;base64,iVBORw0KG... (response truncated)"]
+        [1, "Titanic", 0.485782, "outputs/20250810_123456_abcd1234/plot.png"]
+
+    These are unacceptable replies:
+        [1, "Titanic", 0.485782, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."]
+        ["Answer is 1", "Answer is Titanic", "Correlation is 0.485782", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."]
+        [1, "Titanic", 0.485782, "The image is saved at outputs/20250810_123456_abcd1234/plot.png"]
 
     Begin!
 
     Question: {input}
+
+    You will be given a specific question from above to answer, and you must ignore all others.
     
     {agent_scratchpad}
 """)
@@ -88,8 +107,8 @@ def accumulator(state: AgentState) -> AgentState:
 
 def route_agent(state: AgentState) -> AgentState:
     input_text = state["input"].lower()
-    if "csv" in input_text:
-        return {"next": "csv_agent"}
+    """if "csv" in input_text:
+        return {"next": "csv_agent"}"""
     return {"next": "generic_agent"}
 
 def router(state: AgentState) -> str:

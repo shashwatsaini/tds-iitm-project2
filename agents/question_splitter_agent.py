@@ -5,9 +5,17 @@ from agents.AgentState import AgentState
 
 question_splitter_prompt = PromptTemplate.from_template("""
 You will be given a block of text. It may contain one or more questions.
-Extract and list **only** the questions, one per line. 
-Do not answer them or include any other commentary.
-Ignore any URLs or markdown, and only return the clean questions.
+
+Your task:
+1. Extract and list **only** the questions, one per line.
+2. Remove the parts of questions that mention, but retain the main instruction:
+   - Encoding an image
+   - Encoding a file
+   - Base64 encoding
+   - Data URI formats (e.g., "data:image/png;base64,...")
+3. Do not answer the questions or include any commentary.
+4. Ignore any URLs or markdown.
+5. Return the result as a JSON list of strings.
 
 Text:
 {input}
@@ -15,7 +23,6 @@ Text:
 Output (as a JSON list of strings):
 ```json
 ["Question 1?", "Question 2?", "Question 3?"]
-```
 """)
 
 def get_question_splitter_node(llm) -> Runnable:
@@ -28,6 +35,9 @@ def get_question_splitter_node(llm) -> Runnable:
           \n-------------------------------------------------\n""")
         
         questions = splitter_chain.invoke({"input": state["input"]})
+
+        print(f"[Question Splitter] Extracted Questions: {questions}")
+
         return {
             **state,
             "questions": questions,

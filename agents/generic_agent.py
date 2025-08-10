@@ -23,6 +23,8 @@ def get_generic_agent_node(llm, REACT_PROMPT, tools) -> Runnable:
         result = agent_executor.invoke({
             "input": state["input"] + f'The current question I must answer, and ignore all others: {current_question}',
             "output_dir": state["output_dir"],
+            "csv_dir": state['csv_dir'],
+            "csv_text": state['csv_text']
         })
         
         return {
