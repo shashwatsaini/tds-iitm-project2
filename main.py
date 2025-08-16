@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
 from workflow import create_workflow
+from agents.json_keys_agent import get_json_keys
 
 app = Flask(__name__)
 load_dotenv()
@@ -52,6 +53,8 @@ def run_graph():
             csv_text = f'If a CSV file is given, it is saved in {csv_dir}. I must only use \'CodeExecutorTool\' to interact with CSV files if a CSV file is given'
             request.files['data.csv'].save(csv_dir)
 
+        json_keys_result = get_json_keys(questions_text)
+        
         result = graph.invoke({
             "input": questions_text,
             "request_id": request_id,
@@ -61,23 +64,22 @@ def run_graph():
         })
 
         print(result['answers'])
+        print(json_keys_result)
 
-        # Convert image paths in answers to base64
         answers_list = []
         for answer in result["answers"].values():
+            answer = clean_answer(answer)
             if isinstance(answer, str):
                 ext = os.path.splitext(answer)[1].lstrip(".").lower()
                 if ext in {"png", "jpg", "jpeg"} and os.path.isfile(answer):
                     with open(answer, "rb") as image_file:
                         encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
                     answer = f"data:image/{ext};base64,{encoded_image}"
-            answers_list.append(answer)
+            answers_list.append(answer)   
 
-        answers_list = [clean_answer(ans) for ans in answers_list]        
+        combined_dict = dict(zip(json_keys_result, answers_list))
 
-        return jsonify(
-            answers_list
-        )
+        return jsonify(combined_dict)     
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
