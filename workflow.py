@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 from langchain_core.prompts import PromptTemplate
 
+from langchain_google_genai import ChatGoogleGenerativeAI
 from agents.AgentState import AgentState
 from agents.generic_agent import get_generic_agent_node
 from agents.question_splitter_agent import get_question_splitter_node
@@ -18,7 +19,11 @@ from agents.FallbackLLM import FallbackLLM
 load_dotenv()
 
 # Base LLM
-llm = FallbackLLM()
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    api_key=os.environ.get("GOOGLE_API_KEY"),
+    max_retries=0
+)
 
 tools = [
     web_scraper_tool,

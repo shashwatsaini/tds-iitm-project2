@@ -6,21 +6,25 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
 from workflow import create_workflow
-from agents.json_keys_agent import get_json_keys
+from agents.json_agent import build_json_output
 
 app = Flask(__name__)
 load_dotenv()
 
 graph = create_workflow()
 
-def clean_answer(ans):
-    if isinstance(ans, str):
-        ans = ans.strip()
-        if ans.startswith("[") and ans.endswith("]"):
-            ans = ans[1:-1].strip()
-            if (ans.startswith('"') and ans.endswith('"')) or (ans.startswith("'") and ans.endswith("'")):
-                ans = ans[1:-1]
-    return ans
+def encode_images_in_dict(json_obj):
+    """Walk the JSON result and encode image file paths as base64 if needed."""
+    encoded = {}
+    for key, val in json_obj.items():
+        if isinstance(val, str):
+            ext = os.path.splitext(val)[1].lstrip(".").lower()
+            if ext in {"png", "jpg", "jpeg"} and os.path.isfile(val):
+                with open(val, "rb") as image_file:
+                    encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
+                val = f"data:image/{ext};base64,{encoded_image}"
+        encoded[key] = val
+    return encoded
 
 @app.route("/api", methods=["POST"])
 def run_graph():
@@ -53,8 +57,6 @@ def run_graph():
             csv_text = f'If a CSV file is given, it is saved in {csv_dir}. I must only use \'CodeExecutorTool\' to interact with CSV files if a CSV file is given'
             request.files['data.csv'].save(csv_dir)
 
-        json_keys_result = get_json_keys(questions_text)
-        
         result = graph.invoke({
             "input": questions_text,
             "request_id": request_id,
@@ -64,22 +66,14 @@ def run_graph():
         })
 
         print(result['answers'])
-        print(json_keys_result)
 
-        answers_list = []
-        for answer in result["answers"].values():
-            answer = clean_answer(answer)
-            if isinstance(answer, str):
-                ext = os.path.splitext(answer)[1].lstrip(".").lower()
-                if ext in {"png", "jpg", "jpeg"} and os.path.isfile(answer):
-                    with open(answer, "rb") as image_file:
-                        encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
-                    answer = f"data:image/{ext};base64,{encoded_image}"
-            answers_list.append(answer)   
+        json_result = build_json_output(questions_text, result['answers'])
 
-        combined_dict = dict(zip(json_keys_result, answers_list))
+        json_result = encode_images_in_dict(json_result)
 
-        return jsonify(combined_dict)     
+        print(json_result)
+
+        return jsonify(json_result)     
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
