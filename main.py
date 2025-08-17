@@ -57,13 +57,17 @@ def run_graph():
             csv_text = f'If a CSV file is given, it is saved in {csv_dir}. I must only use \'CodeExecutorTool\' to interact with CSV files if a CSV file is given'
             request.files['data.csv'].save(csv_dir)
 
-        result = graph.invoke({
-            "input": questions_text,
-            "request_id": request_id,
-            "csv_dir": csv_dir,
-            "csv_text": csv_text,
-            "output_dir": output_dir
-        })
+        result = graph.invoke(
+            {
+                "input": questions_text,
+                "request_id": request_id,
+                "csv_dir": csv_dir,
+                "csv_text": csv_text,
+                "output_dir": output_dir
+            },
+            
+            config={"recursion_limit": 50}
+        )
 
         print(result['answers'])
 
